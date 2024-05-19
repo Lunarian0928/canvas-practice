@@ -1,40 +1,50 @@
-const canvas = document.getElementById('gameCanvas');
+const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
+const background = new Image();
+background.src = './asset/img/background.png';
+
 const spriteSheet = new Image();
-spriteSheet.src = 'dog.png';
+spriteSheet.src = './asset/img/dog.png';
+
+const poopImage = new Image(); 
+poopImage.src = './asset/img/poop.png';
+
+const bossMusic = document.getElementById('bossMusic');
 
 const dog = {
-  width: 50,
-  height: 50,
-  x: canvas.width / 2 - 25,
-  y: canvas.height - 100,
+  width: 60,
+  height: 60,
+  x: canvas.width / 2 - 30,
+  y: canvas.height - 200,
   speed: 10,
 };
 
-const spriteRows = 2;
-const spriteCols = 2;
-let currentFrame = 2;
-const totalFrames = spriteRows * spriteCols;
+const spriteWidth = 2227 / 2;
+const spriteHeight = 2227 / 2;
+let currentFrame = 0;
+const totalFrames = 4;
 
 let asteroids = [];
-const numAsteroids = 10;
-
 const asteroidInterval = 1000;
 let lastAsteroidTime = 0;
 
-let gameStarted = false; // 게임 시작 여부를 저장하는 변수
+let gameStarted = false;
+
+function drawBackground() {
+  ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
+}
 
 function drawDog() {
-  const col = currentFrame % spriteCols;
-  const row = Math.floor(currentFrame / spriteCols);
+  const col = currentFrame % 2;
+  const row = Math.floor(currentFrame / 2);
 
   ctx.drawImage(
     spriteSheet,
-    col * 240,
-    row * 240,
-    240,
-    240,
+    col * spriteWidth,
+    row * spriteHeight,
+    spriteWidth,
+    spriteHeight,
     dog.x,
     dog.y,
     dog.width,
@@ -44,11 +54,7 @@ function drawDog() {
 
 function drawAsteroids() {
   asteroids.forEach(asteroid => {
-    ctx.beginPath();
-    ctx.fillStyle = 'red';
-    ctx.arc(asteroid.x, asteroid.y, asteroid.radius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.closePath();
+    ctx.drawImage(poopImage, asteroid.x, asteroid.y, asteroid.radius * 2, asteroid.radius * 2); 
   });
 }
 
@@ -78,59 +84,78 @@ function collisionDetection() {
       dog.y < asteroid.y + asteroid.radius &&
       dog.y + dog.height > asteroid.y
     ) {
+      bossMusic.pause();
       alert('게임 오버!');
-      document.location.reload();
+      window.close();
     }
   });
 }
 
 function drawStartScreen() {
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.font = '30px Arial';
-  ctx.fillStyle = 'white';
-
   if (!gameStarted) {
-    ctx.fillText('Press Space to Start', canvas.width / 2 - 150, canvas.height / 2);
+    drawBackground();
+
+    ctx.fillStyle = "#292926";
+    ctx.font = '700 60px "Gugi"';
+    const titleText = "강아지 똥 피하기 게임";
+    const titleTextWidth = ctx.measureText(titleText).width;
+    ctx.fillText(titleText, (canvas.width - titleTextWidth) / 2, canvas.height / 2);
+
+    ctx.font = '700 24px "Noto Sans KR"';
+    const startText = "스페이스바로 게임 시작";
+    const startTextWidth = ctx.measureText(startText).width;
+    ctx.fillText(startText, (canvas.width - startTextWidth) / 2, canvas.height / 2 + 60);
+
+    ctx.font = '300 16px "Noto Sans KR"';
+    const guideTexts = [
+      '좌우 방향키: 움직이기',
+      'Shift: 대시',
+      'Esc: 게임 일시 정지'
+    ];
+    guideTexts.forEach((text, index) => {
+      const textWidth = ctx.measureText(text).width;
+      ctx.fillText(text, (canvas.width - textWidth) / 2, canvas.height / 2 + 180 + (index * 24));
+    });
   } else {
-    ctx.fillText('3', canvas.width / 2 - 10, canvas.height / 2);
-    setTimeout(() => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.font = '30px Arial';
-      ctx.fillStyle = 'white';
-      ctx.fillText('2', canvas.width / 2 - 10, canvas.height / 2);
-      setTimeout(() => {
+    const countdownText = ['3', '2', '1'];
+    let i = 0;
+
+    const countdown = () => {
+      if (i < countdownText.length) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = 'black';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = '30px Arial';
+        ctx.font = '60px "Noto Sans KR"';
         ctx.fillStyle = 'white';
-        ctx.fillText('1', canvas.width / 2 - 10, canvas.height / 2);
-        setTimeout(() => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          startGame();
-        }, 1000);
-      }, 1000);
-    }, 1000);
+        const text = countdownText[i];
+        const textWidth = ctx.measureText(text).width;
+        ctx.fillText(text, (canvas.width - textWidth) / 2, canvas.height / 2);
+        i++;
+        setTimeout(countdown, 1000);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        startGame();
+      }
+    };
+
+    countdown();
   }
 }
-
 
 drawStartScreen();
 
 document.addEventListener('keydown', event => {
   if (event.key === ' ') {
-    gameStarted = true; // 게임 시작 상태로 변경
-    drawStartScreen(); // 시작 화면을 다시 그려줌
+    gameStarted = true;
+    drawStartScreen();
   }
 });
 
 function startGame() {
+  bossMusic.play();
   function drawFrame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground();
     drawDog();
     drawAsteroids();
     moveAsteroids();
@@ -152,9 +177,11 @@ function startGame() {
 }
 
 document.addEventListener('keydown', event => {
-  if (event.key === 'ArrowLeft') {
-    moveDog('left');
-  } else if (event.key === 'ArrowRight') {
-    moveDog('right');
+  if (gameStarted) {
+    if (event.key === 'ArrowLeft') {
+      moveDog('left');
+    } else if (event.key === 'ArrowRight') {
+      moveDog('right');
+    }
   }
 });
